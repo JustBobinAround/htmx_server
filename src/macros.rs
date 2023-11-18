@@ -4,16 +4,16 @@ macro_rules! add_routes {
         $(
             
             let r = stringify!($closure);
-            let r = match r {
-                "index" => "/",
-                _ => r
+            let idx = match r.find('!') {
+                Some(idx) => idx,
+                None => 0
             };
 
-            if r=="/" {
-                $route.get(&r).to($closure);
+            if &r[..idx]=="index" {
+                $route.get("/").to($closure);
             }else{
-                let r_get = format!("/get.{}",r);
-                let r_post = format!("/post.{}",r);
+                let r_get = format!("/get.{}",r[..idx].to_string());
+                let r_post = format!("/post.{}",r[..idx].to_string());
                 $route.get(&r_get).to($closure);
                 $route.post(&r_post).to($closure);
             }
@@ -50,4 +50,3 @@ macro_rules!  htmx_server{
         let _ = gotham::start($addr, router());
     };
 }
-
