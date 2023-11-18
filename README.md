@@ -3,8 +3,8 @@
 ## Overview
 
 `htmx_server` is a Rust crate that simplifies server-side of
-[htmx](https://htmx.org/) components, not that it was that hard anyway. This crate simply meant to 
-ship htmx and rust stack apps. This crate is still in very early development.
+[htmx](https://htmx.org/) components, not that it was that hard anyway. This crate is simply meant to 
+ship htmx and rust stack apps in the most minimal code possible. This crate is still in very early development.
 There are plans to implement a full HTML! macro similar to JSX that is specialized
 around HTMX. For now however, this crate it only able to serve raw text without
 type verification. Tread carefully!
