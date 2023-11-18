@@ -9,3 +9,5 @@ edition = "2021"
 gotham = "0.7.2"
 http = "1.0.0"
 htmx_comp_macro = { path = "./htmx_comp_macro" }
+async-std = "1.10"
+
