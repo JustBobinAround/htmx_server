@@ -31,7 +31,7 @@ macro_rules! better_router {
 }
 
 #[macro_export]
-macro_rules!  easy_http_server{
+macro_rules!  htmx_server{
 
     ($addr:expr, [$($closure:expr), *]) => {
         use htmx_comp_macro::htmx_comp;
