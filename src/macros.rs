@@ -29,7 +29,7 @@ macro_rules! server{
         }
 
         async fn run_server() -> std::io::Result<()> {
-            let listener = TcpListener::bind($addr).await?;
+            let listener = async_std::net::TcpListener::bind($addr).await?;
             println!("Server listening on http://{}", $addr);
 
             while let Some(stream) = listener.incoming().next().await {
@@ -52,18 +52,17 @@ macro_rules! server{
                                     }
                                     )*
                                     if let Some(content) = html_content {
-                                        task::spawn(send_response(stream, content));
+                                        async_std::task::spawn(send_response(stream, content));
                                     }
                                 } 
                             }
                         }
                     }
                 }
-                //task::spawn(handle_connection(stream));
             }
 
             Ok(())
         }
-        task::block_on(run_server());
+        async_std::task::block_on(run_server());
     };
 }

@@ -27,30 +27,43 @@ Below is a simple example demonstrating how to use `htmx_server` to define and
 serve htmx components:
 
 ```rust
+use async_std::prelude::*;
 use htmx_comp_macro::htmx_comp;
-use htmx_server::*;
+use htmx_server::server;
+use lazy_static::lazy_static;
+use std::sync::Mutex;
 
-#[htmx_comp]
-fn index() {
-    r#"
-  <script src="https://unpkg.com/htmx.org@1.9.8"></script>
-  <!-- have a button POST a click via AJAX -->
-  <button hx-post="/post.clicked" hx-swap="outerHTML">
-  State A
-  </button>
-  "#.to_string()
+lazy_static! {
+    static ref VAL1: Mutex<i32> = Mutex::new(42);
 }
 
-#[htmx_comp]
-fn clicked() {
-    "State B".to_string()
+#[htmx_comp("/")]
+fn index() -> String {
+    match VAL1.lock() {
+        Ok(val) => {
+            Some(format!(r#"
+<script src="https://unpkg.com/htmx.org@1.9.8"></script>
+<!-- have a button POST a click via AJAX -->
+<button hx-get="/clicked" hx-swap="innerHTML">
+{}
+</button>"#, val))
+        },
+        Err(_) => {None}
+    }
 }
 
+#[htmx_comp("/clicked")]
+fn click() -> Option<String>{
+    match VAL1.lock() {
+        Ok(mut val) => {
+            *val += 1;
+            Some(format!("{}", val))
+        },
+        Err(_) => {None}
+    }
+}
 fn main() {
-    htmx_server!("127.0.0.1:8000", [
-        index,
-        clicked
-    ]);
+    server!("127.0.0.1:8000",[index, click]);
 }
 ```
 
@@ -70,6 +83,28 @@ cargo run
 
 3. Visit `127.0.0.1:8000`
 
+## Change Log
+**2023-11-19:**
+- Started 2.0 branch to remove gotham
+- Implemented basic http server
+- Added routing argument to htmx_comp_macro
+- Added basic shared state using lazy_static
+- TODO: make lazy_static shared state feel more seamless with functions
+- TODO: add maud html macro
+- TODO: figure out how to better package external imports
+```Rust
+// your_crate/src/lib.rs
+
+// Import the entire other_crate module1
+pub mod other_crate_module1 {
+    pub use other_crate::module1::*;
+}
+
+// Import only function3 from other_crate module2
+pub use other_crate::module2::function3;
+
+// Additional code for your crate...
+```
 
 ## License
 
