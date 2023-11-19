@@ -5,11 +5,8 @@
 `htmx_server` is a Rust crate that simplifies server-side of
 [htmx](https://htmx.org/) components, not that it was that hard anyway. This crate is simply meant to 
 ship htmx and rust stack apps in the most minimal code possible. This crate is still in very early development.
-There are plans to implement a full HTML! macro similar to JSX that is specialized
-around HTMX. For now however, this crate it only able to serve raw text without
-type verification. Tread carefully!
-
-State management is coming soon
+This crate ships with Maud's HTML! macro along with a basic http server, router, and state management 
+system to handle the GET and POST requests.
 
 ## Getting Started
 
@@ -85,6 +82,62 @@ cargo run
 
 3. Visit `127.0.0.1:8000`
 
+## HTML!
+Visit [Maud](https://maud.lambda.xyz/) to view the html! syntax
+
+## Routing
+Routing is handled by the `htmx_comp` proc macro attribute:
+```rust
+#[htmx_comp("/your_route")]
+fn some_function() -> Option<String>{
+    let mut response: Option<String> = None;
+    global!(SOME_GLOBAL);
+
+    lock_globals!(response, some_global;{
+        *some_global += 1;
+        html!({(some_global)})
+    });
+
+    response
+}
+
+```
+## Http Server
+Routing functions are then called as closures in the `server!` macro:
+```rust
+fn main() {
+        server!("127.0.0.1:8000",[some_function]);
+}
+```
+
+## State Management
+State management is handled with the `Global` type via `lazy_static!`:
+```rust
+lazy_static! {
+    static ref SOME_GLOBAL: Global<i32> = Global::new(42);
+}
+```
+Globals can then be accessed in a `htmx_comp` function. Globals are declared
+via the `global!` macro, and are the accessable via the `lock_globals` macro.
+Notice how `SOME_GOBAL` is accessed as `some_global`. This is not a typo, this
+macro automatically creates a new locked variable called `some_global` to avoid
+shadowing a static reference. Any mutable state must be handled in the `lock_globals`
+code block. Non blocking reads are in the works currentlly...
+```rust
+#[htmx_comp("/your_route")]
+fn some_function() -> Option<String>{
+    let mut response: Option<String> = None;
+    global!(SOME_GLOBAL);
+
+    lock_globals!(response, some_global;{
+        *some_global += 1;
+        html!({(some_global)})
+    });
+
+    response
+}
+```
+
 ## Change Log
 **2023-11-19:**
 - Started 2.0 branch to remove gotham
@@ -98,6 +151,7 @@ cargo run
 **2023-11-20:**
 - Finished TODOs from **2023-11-20**
 - Added an awesome macro to handle nested mutex locks easily
+- TODO: Change Mutex to RwLock for non blocking reads
 
 ## Special Thanks
 Thanks to [Maud](https://github.com/lambda-fairy/maud) for making an awesome macro.
