@@ -32,7 +32,7 @@ serve htmx components:
 use htmx_server::prelude::*;
 
 lazy_static! {
-    static ref VAL1: Arc<Mutex<i32>> = Arc::new(Mutex::new(42));
+    static ref VAL1: Global<i32> = Global::new(42);
 }
 
 #[htmx_comp("/")]
