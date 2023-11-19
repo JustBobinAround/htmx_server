@@ -1,38 +1,38 @@
-use async_std::prelude::*;
-use htmx_comp_macro::htmx_comp;
-use htmx_server::server;
-use lazy_static::lazy_static;
-use std::sync::Mutex;
+use htmx_server::prelude::*;
 
 lazy_static! {
-    static ref VAL1: Mutex<i32> = Mutex::new(42);
+    static ref VAL1: Arc<Mutex<i32>> = Arc::new(Mutex::new(42));
 }
 
 #[htmx_comp("/")]
-fn index() -> String {
-    match VAL1.lock() {
-        Ok(val) => {
-            Some(format!(r#"
-<script src="https://unpkg.com/htmx.org@1.9.8"></script>
-<!-- have a button POST a click via AJAX -->
-<button hx-get="/clicked" hx-swap="innerHTML">
-{}
-</button>"#, val))
-        },
-        Err(_) => {None}
-    }
+fn index() -> Option<String> {
+    global!(VAL1);
+    let mut response: Option<String> = None;
+
+    lock_globals!(response, val1;{
+        html!{
+            script src="https://unpkg.com/htmx.org@1.9.8" {}
+            button hx-get="/clicked" hx-swap="innerHTML" {(val1)}
+        }
+    });
+
+    response
+
 }
 
 #[htmx_comp("/clicked")]
 fn click() -> Option<String>{
-    match VAL1.lock() {
-        Ok(mut val) => {
-            *val += 1;
-            Some(format!("{}", val))
-        },
-        Err(_) => {None}
-    }
+    let mut response: Option<String> = None;
+    global!(VAL1);
+
+    lock_globals!(response, val1;{
+        *val1 += 1;
+        html!({(val1)})
+    });
+
+    response
 }
+
 fn main() {
     server!("127.0.0.1:8000",[index, click]);
 }

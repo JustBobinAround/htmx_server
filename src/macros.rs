@@ -1,4 +1,25 @@
 #[macro_export]
+macro_rules! dec_global {
+    ($id:ident; $ty:ty, $val: expr) => {
+        static ref $id: Arc<Mutex<ty>> = Arc::new(Mutex::new($val));
+    };
+}
+
+#[macro_export]
+macro_rules! lock_globals {
+    ( $ans:ident, $mutex:ident ; $code:block ) => {
+        if let Ok(mut $mutex) = $mutex.lock() {
+            let html = {$code};
+            $ans = Some(html.into_string());
+        };
+    };
+    ( $ans:ident, $head:ident, $($tail:ident),* ; $code:block ) => {
+        if let Ok(mut $head) = $head.lock() {
+            lock_globals!($ans, $($tail),* ; $code);
+        };
+    };
+}
+#[macro_export]
 macro_rules! router {
     ($value:expr, $($pattern:pat => $result:expr),* $(,)?) => {
         match $value{

@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Error, ItemFn,Meta, NestedMeta, Lit, AttributeArgs, punctuated::Punctuated, FnArg, token::Comma};
+use syn::{parse_macro_input,Ident ,ItemFn,NestedMeta, Lit, AttributeArgs};
 
 #[proc_macro_attribute]
 pub fn htmx_comp(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -13,20 +13,11 @@ pub fn htmx_comp(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemFn);
 
     let fn_name = &input.sig.ident;
-    let fn_generics = &input.sig.generics;
     let fn_inputs = &input.sig.inputs;
     let fn_body = &input.block;
     if fn_inputs.len()>0 {
         panic!("A Function with the htmx_comp attribute should contain 0 arguments");
     }
-
-
-    let async_std = quote! { ::async_std};
-
-    // Check if the state argument already exists in fn_inputs
-
-    let fn_name_handler = syn::Ident::new(&format!("{}_handler", fn_name), fn_name.span());
-
     let expanded = quote! {
         fn #fn_name(url: &str) -> Option<String> {
             let a = #arg_value_get;
@@ -37,7 +28,20 @@ pub fn htmx_comp(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
     };
-
     expanded.into()
+}
+
+#[proc_macro]
+pub fn global(input: TokenStream) -> TokenStream {
+    let input_ident = parse_macro_input!(input as Ident);
+
+    let lowercase_name = input_ident.to_string().to_lowercase();
+    let lowercase_ident = Ident::new(&lowercase_name, input_ident.span());
+
+    let expanded = quote! {
+        let #lowercase_ident = #input_ident.clone();
+    };
+
+    TokenStream::from(expanded)
 }
 

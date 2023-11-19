@@ -9,4 +9,9 @@ edition = "2021"
 httparse = "1.8.0"
 htmx_comp_macro = { path = "./htmx_comp_macro" }
 async-std = "1.10"
+lazy_static = "1.4.0"
+maud = "0.25.0"
 
+[lib]
+name = "htmx_server"
+path = "src/lib.rs"
