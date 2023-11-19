@@ -19,6 +19,8 @@ To use `htmx_server` in your Rust project, add it as a dependency in your
 ```toml
 [dependencies]
 htmx_server = { git = "https://github.com/JustBobinAround/htmx_server.git" }
+async-std = "1.10"
+maud = "0.25.0"
 ```
 
 ## Example
@@ -96,6 +98,10 @@ cargo run
 **2023-11-20:**
 - Finished TODOs from **2023-11-20**
 - Added an awesome macro to handle nested mutex locks easily
+
+## Special Thanks
+Thanks to [Maud](https://github.com/lambda-fairy/maud) for making an awesome macro.
+This library wouldn't feel right without it.
 
 ## License
 
