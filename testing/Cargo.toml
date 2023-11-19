@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 htmx_server = { path = "../" }
+async-std = "1.10"
+maud = "0.25.0"
+

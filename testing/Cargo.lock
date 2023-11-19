@@ -587,7 +587,9 @@ dependencies = [
 name = "testing"
 version = "0.1.0"
 dependencies = [
+ "async-std",
  "htmx_server",
+ "maud",
 ]
 
 [[package]]
