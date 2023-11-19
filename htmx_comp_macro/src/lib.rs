@@ -1,62 +1,43 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Error, ItemFn, punctuated::Punctuated, FnArg, token::Comma};
+use syn::{parse_macro_input, Error, ItemFn,Meta, NestedMeta, Lit, AttributeArgs, punctuated::Punctuated, FnArg, token::Comma};
 
 #[proc_macro_attribute]
-pub fn htmx_comp(_attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn htmx_comp(args: TokenStream, input: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(args as AttributeArgs);
+    let arg_value_get = match &args[..] {
+        [NestedMeta::Lit(Lit::Str(ref value))] => value.value(),
+        _ => panic!("The attribute should have exactly one string argument."),
+    };
+    
     let input = parse_macro_input!(input as ItemFn);
 
     let fn_name = &input.sig.ident;
     let fn_generics = &input.sig.generics;
     let fn_inputs = &input.sig.inputs;
     let fn_body = &input.block;
-    let arg_names: Vec<_> = fn_inputs
-        .iter()
-        .filter_map(|arg| {
-            if let syn::FnArg::Typed(pat_type) = arg {
-                if let syn::Pat::Ident(pat) = &*pat_type.pat {
-                    if pat.ident=="state"{
-                        None
-                    } else {
-                        Some(&pat.ident)
-                    }
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-        .collect();
+    if fn_inputs.len()>0 {
+        panic!("A Function with the htmx_comp attribute should contain 0 arguments");
+    }
 
-    let crate_path = quote! { ::gotham };
+
+    let async_std = quote! { ::async_std};
 
     // Check if the state argument already exists in fn_inputs
 
     let fn_name_handler = syn::Ident::new(&format!("{}_handler", fn_name), fn_name.span());
 
     let expanded = quote! {
-        macro_rules! #fn_name{
-            ($($args:ident), *) => {
-                |state| #fn_name_handler(state, $($args),*)
-            };
-        }
-
-        fn #fn_name(#fn_inputs) -> String {
-            #fn_body
-        }
-        fn #fn_name_handler(state: #crate_path::state::State, #fn_inputs) -> (#crate_path::state::State, #crate_path::hyper::Response<#crate_path::hyper::Body>)
-        {
-            let response = #crate_path::helpers::http::response::create_response(
-                &state,
-                #crate_path::hyper::StatusCode::OK,
-                #crate_path::mime::TEXT_HTML,
-                (|#(#arg_names),*| #fn_name(#(#arg_names),*))(#(#arg_names),*)
-            );
-
-            (state, response)
+        fn #fn_name(url: &str) -> Option<String> {
+            let a = #arg_value_get;
+            if url==a {
+                {#fn_body}
+            } else {
+                None
+            }
         }
     };
 
     expanded.into()
 }
+

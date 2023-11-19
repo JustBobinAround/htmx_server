@@ -1,52 +1,69 @@
 #[macro_export]
-macro_rules! add_routes {
-    ($route:ident, $($closure:expr),*) => {
-        $(
-            
-            let r = stringify!($closure);
-            let idx = match r.find('!') {
-                Some(idx) => idx,
-                None => 0
-            };
-
-            if &r[..idx]=="index" {
-                $route.get("/").to($closure);
-            }else{
-                let r_get = format!("/get.{}",r[..idx].to_string());
-                let r_post = format!("/post.{}",r[..idx].to_string());
-                $route.get(&r_get).to($closure);
-                $route.post(&r_post).to($closure);
-            }
-        )*
-    };
-}
-
-#[macro_export]
-macro_rules! better_router {
-    ($($closure:expr), *) => {
-        build_simple_router(|route| {
-            add_routes!(route,$($closure),*);
-        })
-    };
-}
-
-#[macro_export]
-macro_rules!  htmx_server{
-
-    ($addr:expr, [$($closure:expr), *]) => {
-        use htmx_comp_macro::htmx_comp;
-        use gotham::router::Router;
-        use gotham::state::State;
-        use gotham::router::builder::*;
-        use gotham::helpers::http::response::create_response;
-        use gotham::mime;
-        use gotham::hyper::{ Response, StatusCode, Body };
-        fn router() -> Router {
-            better_router!(
-                $($closure), *
-            )
+macro_rules! router {
+    ($value:expr, $($pattern:pat => $result:expr),* $(,)?) => {
+        match $value{
+            $($pattern => $result),*,
+            _ => {()}
         }
-        println!("Listening for requests at http://{}", $addr);
-        let _ = gotham::start($addr, router());
+    };
+}
+#[macro_export]
+macro_rules! server{
+    ($addr:expr,[$($names:expr),*]) => {
+        async fn send_response(mut stream: async_std::net::TcpStream, html_content: String) 
+        {
+
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}",
+                html_content.len(),
+                html_content
+            );
+            if let Err(err) = stream.write_all(response.as_bytes()).await {
+                println!("Error writing to stream: {}", err);
+            }
+
+            if let Err(err) = stream.flush().await {
+                println!("Error flushing stream: {}", err);
+            }
+
+        }
+
+        async fn run_server() -> std::io::Result<()> {
+            let listener = TcpListener::bind($addr).await?;
+            println!("Server listening on http://{}", $addr);
+
+            while let Some(stream) = listener.incoming().next().await {
+                let stream = stream?;
+                  
+                let mut buffer = [0; 1000];
+                if let Ok(n) = stream.peek(&mut buffer).await {
+                    if n > 4 {
+                        if let Ok(request_str) = std::str::from_utf8(&buffer) {
+                            if let Some(mut start_of_url) = request_str.find(' ') {
+                                start_of_url += 1;
+                                if let Some(end_of_url) = request_str[start_of_url..n].find(' ') {
+                                    //println!("s:{} e:{} n:{}", start_of_url, end_of_url, n);
+                                    let url = &request_str[start_of_url..end_of_url+start_of_url]; // Assuming "GET /some_route HTTP/1.1", so skipping "GET "
+                                    println!("{}", url);
+                                    let mut html_content: Option<String> = None;
+                                    $(
+                                    if let Some(content) = $names(&url) {
+                                        html_content = Some(content);
+                                    }
+                                    )*
+                                    if let Some(content) = html_content {
+                                        task::spawn(send_response(stream, content));
+                                    }
+                                } 
+                            }
+                        }
+                    }
+                }
+                //task::spawn(handle_connection(stream));
+            }
+
+            Ok(())
+        }
+        task::block_on(run_server());
     };
 }

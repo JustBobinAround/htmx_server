@@ -6,8 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gotham = "0.7.2"
-http = "1.0.0"
+httparse = "1.8.0"
 htmx_comp_macro = { path = "./htmx_comp_macro" }
 async-std = "1.10"
 
