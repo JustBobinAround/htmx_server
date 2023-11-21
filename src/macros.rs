@@ -84,6 +84,10 @@ macro_rules! server{
 
             Ok(())
         }
-        async_std::task::block_on(run_server());
+
+        match async_std::task::block_on(run_server()) {
+            Ok(_) => {},
+            Err(_) => {println!("Failed to bind to address. Is a server already running?");}
+        }
     };
 }
